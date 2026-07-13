@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- hero: monochrome ASCII portrait (types in) beside a neofetch-style info
-     panel. regenerate portrait: node scripts/make_ascii_svg.js ;
+     panel. regenerate portrait: node scripts/make_ascii_svg.js (uses scripts/photo_ascii_art.txt) ;
      info panel: node scripts/make_info_card.js -->
 <table>
 <tr>

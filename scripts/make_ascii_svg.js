@@ -1,90 +1,55 @@
-// Generates husam-ascii.svg: a monochrome ASCII portrait of scripts/avatar.png
-// that "types in" row by row, framed as a terminal window.
+// Generates husam-ascii.svg from scripts/photo_ascii_art.txt (types in row by row).
 // Usage: node scripts/make_ascii_svg.js
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { decodePNG } = require("./png-decode");
 
-const COLS = 78;
 const CHAR_W = 6;
 const CHAR_H = 10;
 const FONT_SIZE = 9.5;
-// dark -> light ramp (dark background, so bright pixels get dense glyphs)
-const RAMP = " .'`,:;i!~+xmo*#W&8%B@$";
+const TARGET_COLS = 78;
+const TARGET_ROWS = 52;
 
 function escXml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-const raw = decodePNG(fs.readFileSync(path.join(__dirname, "avatar.png")));
+function loadAsciiArt(filePath) {
+  return fs
+    .readFileSync(filePath, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+$/, ""))
+    .filter((line) => line.length > 0);
+}
 
-// Portrait photos: crop to upper-center face region so the ASCII reads clearly.
-function cropPortrait(img) {
-  const { width: w, height: h, rgba } = img;
-  if (h <= w * 1.05) return img;
-  const side = Math.round(w * 0.92);
-  const x0 = Math.round((w - side) / 2);
-  const y0 = Math.round(h * 0.02);
-  const y1 = Math.min(h, y0 + side);
-  const cw = side;
-  const ch = y1 - y0;
-  const out = Buffer.alloc(cw * ch * 4);
-  for (let y = 0; y < ch; y++) {
-    for (let x = 0; x < cw; x++) {
-      const si = ((y0 + y) * w + (x0 + x)) * 4;
-      const di = (y * cw + x) * 4;
-      out[di] = rgba[si]; out[di + 1] = rgba[si + 1]; out[di + 2] = rgba[si + 2]; out[di + 3] = rgba[si + 3];
-    }
+// Face-focused crop: upper-center of portrait ASCII art.
+function cropArt(lines, cols, rows) {
+  const h = lines.length;
+  const w = Math.max(...lines.map((l) => l.length));
+  const y0 = Math.max(0, Math.round(h * 0.14));
+  const x0 = Math.max(0, Math.round((w - cols) / 2));
+  const out = [];
+  for (let y = y0; y < Math.min(h, y0 + rows); y++) {
+    const slice = (lines[y] + " ".repeat(w)).slice(x0, x0 + cols);
+    out.push(slice.padEnd(cols, " "));
   }
-  return { width: cw, height: ch, rgba: out };
+  while (out.length < rows) out.push(" ".repeat(cols));
+  return out;
 }
 
-const src = cropPortrait(raw);
-const ROWS = Math.round((src.height / src.width) * COLS * (CHAR_W / CHAR_H));
-
-function sampleLuma(gx, gy) {
-  // average the source pixels covered by one character cell
-  const x0 = Math.floor((gx / COLS) * src.width);
-  const x1 = Math.max(x0 + 1, Math.floor(((gx + 1) / COLS) * src.width));
-  const y0 = Math.floor((gy / ROWS) * src.height);
-  const y1 = Math.max(y0 + 1, Math.floor(((gy + 1) / ROWS) * src.height));
-  let sum = 0, n = 0;
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const p = (y * src.width + x) * 4;
-      const a = src.rgba[p + 3] / 255;
-      const l = (0.2126 * src.rgba[p] + 0.7152 * src.rgba[p + 1] + 0.0722 * src.rgba[p + 2]) * a;
-      sum += l; n++;
-    }
-  }
-  return sum / n / 255;
-}
-
-// gentle contrast stretch so the portrait pops on a dark background
-function tone(l) {
-  const v = Math.min(1, Math.max(0, (l - 0.08) / 0.84));
-  return Math.pow(v, 1.15);
-}
-
-const rows = [];
-for (let gy = 0; gy < ROWS; gy++) {
-  let line = "";
-  for (let gx = 0; gx < COLS; gx++) {
-    const l = tone(sampleLuma(gx, gy));
-    line += RAMP[Math.min(RAMP.length - 1, Math.floor(l * RAMP.length))];
-  }
-  rows.push(line);
-}
+const sourcePath = path.join(__dirname, "photo_ascii_art.txt");
+const raw = loadAsciiArt(sourcePath);
+const rows = cropArt(raw, TARGET_COLS, TARGET_ROWS);
+const COLS = TARGET_COLS;
 
 const PAD = 14;
 const BAR_H = 28;
 const gridW = COLS * CHAR_W;
-const gridH = ROWS * CHAR_H;
+const gridH = rows.length * CHAR_H;
 const W = gridW + PAD * 2;
 const H = gridH + PAD * 2 + BAR_H;
 
-const ROW_DUR = 0.55;   // seconds for one row to type in
+const ROW_DUR = 0.55;
 const ROW_STAGGER = 0.09;
 
 let defs = "";
@@ -122,4 +87,4 @@ ${body}<rect class="cursor" x="${PAD}" y="${H - PAD - CHAR_H + 1}" width="${CHAR
 `;
 
 fs.writeFileSync(path.join(__dirname, "..", "husam-ascii.svg"), svg);
-console.log(`husam-ascii.svg written (${COLS}x${ROWS} chars, ${(svg.length / 1024).toFixed(1)} KB, types in over ~${totalType}s)`);
+console.log(`husam-ascii.svg written (${COLS}x${rows.length} from photo_ascii_art.txt, ${(svg.length / 1024).toFixed(1)} KB)`);
