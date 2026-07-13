@@ -5,8 +5,8 @@
      info panel: node scripts/make_info_card.js -->
 <table>
 <tr>
-<td valign="top"><img src="./husam-ascii.svg" width="370" alt="Husam Moussa — ASCII portrait" /></td>
-<td valign="top"><img src="./info-card.svg" width="490" alt="Husam Moussa — experience, stack, highlights" /></td>
+<td valign="top"><img src="./husam-ascii.svg" width="370" alt="" /></td>
+<td valign="top"><img src="./info-card.svg" width="490" alt="" /></td>
 </tr>
 </table>
 
@@ -23,6 +23,6 @@
 
 <!-- animated contribution graph: real data, boxes reveal cell by cell
      (regenerated daily by .github/workflows/update-profile-art.yml) -->
-<img src="./contrib-heatmap.svg" width="860" alt="Husam's GitHub contribution graph — auto-refreshed daily" />
+<img src="./contrib-heatmap.svg" width="860" alt="" />
 
 </div>
